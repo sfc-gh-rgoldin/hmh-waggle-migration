@@ -1,12 +1,12 @@
-# Credit Estimation — Usage Metrics Collection & Snowflake Cost Projection
+# Workload Sizing — Usage Patterns & Volume Projection
 
 ## Overview
 
-This reference provides a structured methodology for collecting current-state usage metrics from the Redshift/Talend environment and projecting equivalent Snowflake credit consumption for the target architecture. The output is a defensible cost model comparing current spend to projected Snowflake spend.
+This reference provides a structured methodology for collecting current-state workload patterns from the Redshift/Talend environment and projecting equivalent Snowflake resource sizing for the target architecture. The output is a right-sized architecture with defensible compute and storage projections.
 
-## Why Collect Usage Metrics
+## Why Collect Workload Metrics
 
-Raw object counts (tables, rows, storage) are insufficient for credit estimation. What drives Snowflake cost is **compute activity** — how often queries run, how long they take, how much data they scan, and how much concurrency the system handles. These metrics must be collected from the current environment to produce a credible projection.
+Raw object counts (tables, rows, storage) are insufficient for proper sizing. What drives architecture decisions is **workload intensity** — how often queries run, how long they take, how much data they scan, and how much concurrency the system handles. These metrics must be collected from the current environment to produce a properly sized target architecture.
 
 ---
 
@@ -110,7 +110,7 @@ Collect these manually or from monitoring:
 | **Nightly batch duration** | Talend run history | Maps to dbt transform warehouse active time |
 | **Number of batch runs per day** | Talend scheduler | Determines warehouse wake-up frequency |
 | **Peak extraction parallelism** | Talend server config | Affects ingestion warehouse sizing |
-| **Data volume per sync (GB)** | S3 staging bucket metrics | Snowpipe/Fivetran credit estimation |
+| **Data volume per sync (GB)** | S3 staging bucket metrics | Ingestion volume sizing |
 | **Full refresh frequency** | Schedule (which tables do full reload vs. incremental) | Full refreshes are expensive on Snowflake |
 
 ### 1.3 Reporting & BI Metrics
@@ -200,7 +200,7 @@ APP/API WAREHOUSE (WAGGLE_API_WH):
   Daily credits = size_credits × active_hours × avg_cluster_count
 ```
 
-### 2.3 Serverless & AI Credit Estimation
+### 2.3 Serverless & AI Consumption Estimation
 
 | Component | Estimation Method |
 |-----------|------------------|
@@ -218,7 +218,7 @@ APP/API WAREHOUSE (WAGGLE_API_WH):
 
 ## Step 3: Build the Cost Projection
 
-### 3.1 Monthly Credit Projection Template
+### 3.1 Monthly Projection Template
 
 Present this table to the user, filling values from collected metrics:
 
@@ -240,10 +240,10 @@ Present this table to the user, filling values from collected metrics:
 ### 3.2 Convert to Dollar Cost
 
 ```
-Monthly cost = (total_credits × $/credit) + storage_cost + fivetran_cost + dbt_cloud_cost
+Monthly cost = (total_credits × $/credit) + storage_cost + ingestion_tool_cost + dbt_cloud_cost
 ```
 
-Credit pricing varies by edition and contract:
+Pricing varies by edition and contract:
 - Standard: ~$2.00/credit
 - Enterprise: ~$3.00/credit  
 - Business Critical: ~$4.00/credit
@@ -296,11 +296,11 @@ Credits won't hit steady-state on day one. Model the ramp:
 
 ---
 
-## Step 5: Questions to Ask for Credit Estimation
+## Step 5: Questions to Ask for Workload Sizing
 
-These questions supplement the general discovery (Section 9 of the question bank) and are **specifically required** for credit estimation. Ask them during Phase 1 or as a follow-up:
+These questions supplement the general discovery (Section 9 of the question bank) and are **specifically required** for proper architecture sizing. Ask them during Phase 1 or as a follow-up:
 
-### 5.1 Compute Intensity
+### 5.1 Activity Patterns
 
 1. How many hours per day is your Redshift cluster actively processing queries (vs. idle)?
 2. What is your peak query concurrency (max simultaneous queries)? When does this peak occur?
@@ -308,33 +308,33 @@ These questions supplement the general discovery (Section 9 of the question bank
 4. How many dbt/transformation runs would you expect per day? (currently Talend runs = ___)
 5. Are there periods of zero activity (nights, weekends, school breaks)?
 
-### 5.2 Data Freshness vs. Cost Tradeoff
+### 5.2 Data Freshness Needs
 
 6. Which tables need near-real-time freshness (<5 min)? Which are fine with daily refresh?
-7. For Dynamic Tables — what target lag is acceptable per mart? (1 min, 5 min, 1 hour, daily?)
-8. Would you prefer cost savings from less frequent refreshes, or pay more for lower latency?
+7. For reporting marts — what target lag is acceptable? (1 min, 5 min, 1 hour, daily?)
+8. Would you prefer lower resource consumption with less frequent refreshes, or pay more for lower latency?
 
-### 5.3 AI Platform Sizing
+### 5.3 AI Platform Volume
 
 9. In Year 1, how many AI queries/day do you expect? (NL analytics for teachers, agent automations)
-10. How many documents/pages would be indexed for Cortex Search (RAG)? (curriculum, content library)
+10. How many documents/pages would be indexed for search/RAG? (curriculum, content library)
 11. How many students would ML models score? How frequently? (daily, weekly)
 12. Is there a hard budget ceiling for AI experimentation, or is it "prove value first, optimize later"?
 
-### 5.4 Cost Constraints
+### 5.4 Budget Context
 
-13. What is your target monthly Snowflake budget? (Or: what's the current total platform cost you'd like to stay under?)
+13. What is your target monthly budget for the data platform? (Or: what's the current total platform cost you'd like to stay under?)
 14. Would you prefer capacity pricing (commit upfront for lower rate) or on-demand (pay as you go, higher rate)?
-15. Is the ROI story primarily about cost savings (cheaper than Redshift) or value creation (AI enables new revenue)?
+15. Is the ROI story primarily about cost savings or value creation (AI enables new revenue)?
 
 ---
 
 ## Output Template
 
-The credit estimation section in `03-target-architecture.md` should include:
+The cost model section in `03-target-architecture.md` should include:
 
 ```markdown
-## Cost Model & Credit Estimation
+## Cost Model & Resource Projection
 
 ### Current State Annual Cost
 | Component | Annual Cost |
@@ -346,9 +346,9 @@ The credit estimation section in `03-target-architecture.md` should include:
 | Operational labor | $ |
 | **Total** | **$** |
 
-### Projected Snowflake Annual Cost (Steady State)
-| Workload | Warehouse | Credits/Month | Annual Credits | Annual Cost |
-|----------|-----------|---------------|----------------|-------------|
+### Projected Annual Cost (Steady State)
+| Workload | Warehouse Size | Consumption/Month | Annual Consumption | Annual Cost |
+|----------|---------------|-------------------|--------------------| ------------|
 | Ingestion | XS | | | |
 | Transformation | S-M | | | |
 | Reporting | S (multi-cluster) | | | |
@@ -357,24 +357,24 @@ The credit estimation section in `03-target-architecture.md` should include:
 | Serverless (Tasks, DTs) | — | | | |
 | **Subtotal Compute** | | | | **$** |
 | Storage (___TB) | | | | **$** |
-| Fivetran (if applicable) | | | | **$** |
+| Ingestion tool (if applicable) | | | | **$** |
 | dbt Cloud (if applicable) | | | | **$** |
 | **TOTAL** | | | | **$** |
 
 ### Scenario Comparison
-| Scenario | Annual Snowflake | vs. Current | Savings/(Cost) |
+| Scenario | Annual Projected | vs. Current | Savings/(Cost) |
 |----------|-----------------|-------------|----------------|
 | Conservative | $ | $ | |
 | Expected | $ | $ | |
 | Optimistic | $ | $ | |
 
 ### Key Assumptions
-- [ ] Snowflake speedup factor: ___x
+- [ ] Performance factor: ___x vs. current platform
 - [ ] Auto-suspend savings: ___% of compute hours recaptured
-- [ ] AI ramp: ___ credits/month by Month 6
-- [ ] Edition: Enterprise ($3/credit)
+- [ ] AI ramp: estimated consumption by Month 6
+- [ ] Edition: Enterprise
 - [ ] Storage region: us-west-2
 
-### 12-Month Credit Ramp
-[Table or chart showing monthly credit consumption during migration and ramp to steady state]
+### 12-Month Ramp
+[Table or chart showing monthly resource consumption during migration and ramp to steady state]
 ```
