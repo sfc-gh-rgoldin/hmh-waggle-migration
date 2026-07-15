@@ -233,7 +233,43 @@ This ontology powers:
 - Cortex Agent routing (which tool to use for which entity)
 - Natural language disambiguation ("my students" = teacher's current classes)
 
-## Step 3.5 — Generate Output
+## Step 3.5 — Credit Estimation & Cost Model
+
+Read `references/credit-estimation.md` Steps 2-4 for the full methodology.
+
+Using the usage metrics collected in Phase 1 (Step 1.4), build the Snowflake credit projection:
+
+1. **Map workloads to warehouses** — assign each workload (ingestion, transform, reporting, app/API, AI) a warehouse size based on query complexity and data scan volume from the current environment.
+
+2. **Estimate active hours** — use the Redshift query profile data (daily compute hours, batch window duration, reporting hours) to estimate how many hours each Snowflake warehouse would be active. Apply auto-suspend savings (Snowflake only charges when running).
+
+3. **Calculate daily/monthly credits** — `credits = warehouse_size_credits × active_hours × cluster_count`. Sum across all warehouses.
+
+4. **Add serverless and AI costs** — Dynamic Table refreshes, Cortex AI functions (per-token), Cortex Search (index + query), Tasks, Snowpipe. Use projected AI adoption from the user's Phase 1 answers.
+
+5. **Build scenario table** — Conservative (no speedup assumed, max warehouse sizes), Expected (3x speedup, moderate auto-suspend), Optimistic (5x speedup, aggressive right-sizing).
+
+6. **Compare to current spend** — Side-by-side: current Redshift + Talend + S3 annual cost vs. projected Snowflake + Fivetran/Openflow + dbt annual cost.
+
+7. **12-month ramp** — Credits won't hit steady-state immediately. Model the ramp from Wave 0 through full migration + AI adoption.
+
+Present to the user for validation:
+
+> Here's the projected credit consumption for your target architecture. This is based on:
+> - Your current query volume: [X] queries/day, [Y] compute hours/day
+> - Batch window: [Z] hours nightly
+> - Peak concurrency: [N] simultaneous queries
+> - AI platform: phased adoption starting Month [M]
+>
+> [Present the monthly credit projection table]
+> [Present the scenario comparison]
+> [Present current vs. projected annual cost]
+>
+> Does this align with your budget expectations? Would you like to adjust any assumptions (warehouse sizes, refresh frequencies, AI adoption timeline)?
+
+⚠️ **STOP**: Get user feedback on cost model before finalizing.
+
+## Step 3.6 — Generate Output
 
 Create `03-target-architecture.md` with:
 
@@ -271,8 +307,13 @@ Create `03-target-architecture.md` with:
 | Dimension | Current (Redshift/Talend) | Target (Snowflake) | Benefit |
 |-----------|---------------------------|-----------------------|---------|
 
-## Cost Model
-[Estimated Snowflake credits/month, Fivetran cost, dbt cost, total vs. current]
+## Cost Model & Credit Estimation
+[Use the full output template from references/credit-estimation.md — include:
+- Current state annual cost breakdown
+- Projected Snowflake annual cost by workload (warehouse, credits/month, annual cost)
+- Scenario comparison (conservative/expected/optimistic)
+- Key assumptions listed
+- 12-month credit ramp table]
 
 ## Risks & Mitigations
 [Architecture risks and how they're addressed]

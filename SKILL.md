@@ -178,15 +178,55 @@ Read `references/question-bank.md` and walk through each category interactively.
 
 For each answer received, note it in the output. If the user says "I don't know" or "need to check", mark it as `[TBD — needs engineering team input]`.
 
-### Step 1.4 — Snowflake-Specific Decisions
+### Step 1.4 — Usage Metrics for Credit Estimation
+
+Read `references/credit-estimation.md` Steps 1 and 5.
+
+Collect usage metrics required to project Snowflake credit consumption. These go **beyond** object inventory and capture the workload intensity of the current environment.
+
+**If Redshift access was provided in Step 1.2**, run the query workload profiling queries from `references/credit-estimation.md` Section 1.1 automatically:
+- Daily query volume and compute hours (30 days)
+- Query volume by user/service (ETL vs. reporting vs. ad-hoc breakdown)
+- Concurrency profile (peak simultaneous queries per hour)
+- Data scanned per query (GB)
+- WLM queue wait times
+- Nightly batch window duration
+
+**For all deployments**, ask the supplemental credit estimation questions (Section 5 of `references/credit-estimation.md`):
+
+> To estimate your Snowflake credit consumption accurately, I need a few additional data points:
+>
+> **Compute intensity:**
+> 1. How many hours/day is Redshift actively processing queries (vs. idle)?
+> 2. What is your peak concurrent query count? When does it peak?
+> 3. How long does your nightly ETL batch run (start to finish)?
+> 4. Are there periods of zero activity (nights, weekends, school breaks)?
+>
+> **Data freshness vs. cost:**
+> 5. Which tables need near-real-time freshness (<5 min)? Which are fine with daily?
+> 6. For reporting marts — is 1-minute, 5-minute, or 1-hour freshness acceptable?
+>
+> **AI platform sizing (Year 1 estimate):**
+> 7. How many natural-language analytics queries/day do you expect from teachers/admins?
+> 8. How large is the content corpus for RAG (documents/pages)?
+> 9. How many students would ML models score, and how often?
+>
+> **Cost constraints:**
+> 10. What is your target monthly Snowflake budget (or current total platform cost to stay under)?
+> 11. Is the ROI story about cost savings or value creation (AI enables new revenue)?
+
+⚠️ **STOP**: Wait for user answers. Record in the output file under a "Usage Metrics & Cost Inputs" section.
+
+### Step 1.5 — Snowflake-Specific Decisions
 
 Present questions from Section 10 of the question bank (Snowflake-Specific Decisions). These require architectural judgment and cannot be auto-collected.
 
-### Step 1.5 — Generate Output File
+### Step 1.6 — Generate Output File
 
 Create `01-current-state-discovery.md` using the template from `references/output-templates.md`. Include:
 - All answered questions with responses
 - Architecture diagrams (current state in Mermaid)
+- **Usage metrics summary** (query volumes, compute hours, concurrency, batch durations, data freshness requirements)
 - TBD items clearly marked
 - Summary of key findings and risks
 - Recommended next steps
@@ -201,7 +241,7 @@ Write the file to the user's current working directory.
 > **Items needing follow-up:**
 > [List TBD items]
 
-### Step 1.6 — AIM Assessment (combined — runs automatically if Redshift was connected)
+### Step 1.7 — AIM Assessment (combined — runs automatically if Redshift was connected)
 
 **If Redshift credentials were provided in Step 1.2**, proceed directly to AIM assessment without requiring the user to start a new phase. The DDLs are already extracted — use them now.
 
@@ -239,8 +279,8 @@ Read `references/phase3-architecture.md` for detailed instructions.
 4. Design data ingestion layer (evaluate Fivetran vs. Openflow vs. Snowpipe Streaming)
 5. Design transformation layer (dbt, Dynamic Tables, stored procs)
 6. Design AI platform layer (read `references/ai-capabilities-matrix.md`)
-7. Compare current vs. proposed cost model
-8. Output: `03-target-architecture.md` with Mermaid diagrams
+7. **Build credit estimation model** — read `references/credit-estimation.md` Steps 2-4. Map collected usage metrics to Snowflake warehouse sizes, estimate credits per workload, build monthly projection table, produce scenario comparison (conservative/expected/optimistic), and 12-month ramp model.
+8. Output: `03-target-architecture.md` with Mermaid diagrams and **full Cost Model & Credit Estimation section**
 
 ---
 
